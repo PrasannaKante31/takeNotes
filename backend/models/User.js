@@ -21,4 +21,6 @@ const UserSchema = new Schema({
   },
 });
 
-module.exports = mongoose.model("user", UserSchema);
+const User = mongoose.model("user", UserSchema);
+User.createIndexes(); // multiple same attribute user not allowed
+module.exports = User;
