@@ -44,4 +44,50 @@ router.post(
     }
   }
 );
+
+// Route 3: update a note using PUT api/notes/updateNotes
+router.put("/updateNote/:id", fetchUser, async (req, res) => {
+  try {
+    const { title, description, tag } = req.body;
+    const newNote = {};
+
+    if (title) newNote.title = title;
+    if (description) newNote.description = description;
+    if (tag) newNote.tag = tag;
+
+    let note = await Note.findById(req.params.id);
+
+    if (!note) res.status(404).json({ error: "Note Not Found" });
+    if (note.user.toString() != req.user.id)
+      res.status(401).send("UNAUTHORIZED USER");
+
+    note = await Note.findByIdAndUpdate(
+      req.params.id,
+      { $set: newNote },
+      { new: true }
+    );
+
+    res.json({ note });
+  } catch (err) {
+    res.status(500).json({ error: "some internal server error occured" });
+  }
+});
+
+// Route 4: update a note using PUT api/notes/updateNotes
+router.delete("/deleteNote/:id", fetchUser, async (req, res) => {
+  try {
+    let note = await Note.findById(req.params.id);
+
+    if (!note) return res.status(404).json({ error: "Note Not Found" });
+    if (note.user.toString() != req.user.id)
+      res.status(401).send("UNAUTHORIZED USER");
+    //allow deletion only if user owns this
+    note = await Note.findByIdAndDelete(req.params.id);
+
+    res.json({ SUCCESS: "Note has been deleted" });
+  } catch (err) {
+    res.status(500).json({ error: "some internal server error occured" });
+  }
+});
+
 module.exports = router;
