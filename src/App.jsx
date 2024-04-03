@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar.jsx";
 import Home from "./components/Home.jsx";
 import About from "./components/About.jsx"
 import NoteState from './contexts/notes/NoteState';
+import Alert from './components/Alert.jsx';
 //Switch in react-router-dom has been depricated and Routes is being used
 import {
   BrowserRouter as Router,
@@ -19,6 +20,7 @@ function App() {
     <NoteState>
       <Router>
         <Navbar/>
+        <Alert message="this is alert"/>
         <div className="container">
         <Routes>
         <Route path='/' element={<Home/>} />
