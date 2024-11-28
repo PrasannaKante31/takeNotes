@@ -1,67 +1,74 @@
 const express = require("express");
+const User = require("../models/User");
 const router = express.Router();
-const User = require("../models/User.js");
 const { body, validationResult } = require("express-validator");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+var jwt = require("jsonwebtoken");
+var fetchUser = require("../middleware/fetchUser");
+
 const JWT_SECRET = "iAm1ofMyKind";
-const fetchUser = require("../middleware/fetchUser.js");
-//ROUTE 1: create a user using POST "/api/auth/createUser". Doesnt require auth
+// ROUTE 1: Create a User using: POST "/api/auth/createuser". No login required
 router.post(
-  "/createUser",
+  "/createuser",
   [
-    body("name", "Enter a valid name").isLength({ min: 2 }),
-    body("email", "Should be valid email").isEmail(),
-    body("password", "password must contain at least 5 letters").isLength({
+    body("name", "Enter a valid name").isLength({ min: 3 }),
+    body("email", "Enter a valid email").isEmail(),
+    body("password", "Password must be atleast 5 characters").isLength({
       min: 5,
     }),
   ],
   async (req, res) => {
+    // If there are errors, return Bad request and the errors
+    let success = false;
     const errors = validationResult(req);
-    // if there are errors then return bad request and errors
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success, errors: errors.array() });
     }
-    //check whether the user exists already
     try {
+      // Check whether the user with this email exists already
       let user = await User.findOne({ email: req.body.email });
-
       if (user) {
-        return res.status(400).json({ error: "email already in use" });
+        return res
+          .status(400)
+          .json({ error: "Sorry a user with this email already exists" });
       }
       const salt = await bcrypt.genSalt(10);
       const secPass = await bcrypt.hash(req.body.password, salt);
+
+      // Create a new user
       user = await User.create({
         name: req.body.name,
-        email: req.body.email,
         password: secPass,
+        email: req.body.email,
       });
-
       const data = {
         user: {
           id: user.id,
         },
       };
+      const authtoken = jwt.sign(data, JWT_SECRET);
 
-      const authToken = jwt.sign(data, JWT_SECRET);
-      res.json(authToken);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("some error occured");
+      // res.json(user)
+      success = true;
+      res.json({ success, authtoken });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send("Internal Server Error");
     }
   }
 );
 
-//ROUTE 2: login using POST "/api/auth/login". Doesnt require login
+// ROUTE 2: Authenticate a User using: POST "/api/auth/login". No login required
 router.post(
   "/login",
   [
-    body("email", "Should be valid email").isEmail(),
-    body("password", "Password can not be blank").exists(),
+    body("email", "Enter a valid email").isEmail(),
+    body("password", "Password cannot be blank").exists(),
   ],
   async (req, res) => {
+    let success = false;
+    // If there are errors, return Bad request and the errors
     const errors = validationResult(req);
-    // if there are errors then return bad request and errors
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
@@ -69,43 +76,47 @@ router.post(
     const { email, password } = req.body;
     try {
       let user = await User.findOne({ email });
-      if (!user)
+      if (!user) {
+        success = false;
         return res
           .status(400)
-          .json({ error: "Try to login with correct credentials" });
-      const passwordCompare = await bcrypt.compare(password, user.password);
+          .json({ error: "Please try to login with correct credentials" });
+      }
 
-      if (!passwordCompare)
-        return res
-          .status(400)
-          .json({ error: "Try to login with correct credentials" });
+      const passwordCompare = await bcrypt.compare(password, user.password);
+      if (!passwordCompare) {
+        success = false;
+        return res.status(400).json({
+          success,
+          error: "Please try to login with correct credentials",
+        });
+      }
+
       const data = {
         user: {
           id: user.id,
         },
       };
-
-      const authToken = jwt.sign(data, JWT_SECRET);
-      res.json(authToken);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("some error occured");
+      const authtoken = jwt.sign(data, JWT_SECRET);
+      success = true;
+      res.json({ success, authtoken });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send("Internal Server Error");
     }
   }
 );
 
-//ROUTE 3: get logged in user details POST "/api/auth/getuser". requires login
-
-router.post("/getUser", fetchUser, async (req, res) => {
+// ROUTE 3: Get loggedin User Details using: POST "/api/auth/getuser". Login required
+router.post("/getuser", fetchUser, async (req, res) => {
   try {
     const userId = req.user.id;
+
     const user = await User.findById(userId).select("-password");
-    // gives user without displaying the password
     res.send(user);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("some error occured");
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
   }
 });
-
 module.exports = router;

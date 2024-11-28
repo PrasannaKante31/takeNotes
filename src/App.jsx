@@ -1,36 +1,39 @@
-import './App.css'
-import Navbar from "./components/Navbar.jsx";
-import Home from "./components/Home.jsx";
-import About from "./components/About.jsx"
-import NoteState from './contexts/notes/NoteState';
-import Alert from './components/Alert.jsx';
-//Switch in react-router-dom has been depricated and Routes is being used
+import './App.css';
 import {
   BrowserRouter as Router,
   Routes,
-  Route,
+  Route
 } from "react-router-dom";
-//defining routes has also changed in react-router-dom
-// https://stackoverflow.com/questions/63124161/attempted-import-error-switch-is-not-exported-from-react-router-dom
-function App() {
-    //  wrapping the app inside NoteState, the ones which are inside will be able to access the props 
+import Navbar from './components/Navbar';
+import Home  from './components/Home';
+import About from './components/About';
+import NoteState from './contexts/notes/NoteState';
+import Alert from './components/Alert';
+import Signup from './components/Signup';
+import Login from './components/Login';
 
+function App() {
   return (
     <>
-    <NoteState>
-      <Router>
-        <Navbar/>
-        <Alert message="this is alert"/>
-        <div className="container">
-        <Routes>
-        <Route path='/' element={<Home/>} />
-        <Route path='/About' element={<About/>} />
-        </Routes>
-        </div>
-      </Router>
-    </NoteState>
+      <NoteState>
+        <Router>
+          <Navbar />
+          <div className="container">
+            <Routes>
+              <Route exact path="/" element={<Home/>}/>
+                
+              <Route exact path="/about" element={<About/>}/>
+                
+              <Route exact path="/login" element={<Login/>}/>
+                
+              <Route exact path="/signup" element={<Signup/>}/>
+                
+            </Routes>
+          </div>
+        </Router>
+      </NoteState>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
